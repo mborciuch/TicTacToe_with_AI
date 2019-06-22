@@ -361,7 +361,7 @@
                       <option name="index" value="1" />
                       <option name="name" value="Print a state of the game field" />
                       <option name="record" value="-1" />
-                      <option name="status" value="Solved" />
+                      <option name="status" value="Failed" />
                       <option name="stepikChangeStatus" value="Info and Content changed" />
                       <option name="files">
                         <map>
