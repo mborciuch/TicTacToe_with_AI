@@ -4,21 +4,23 @@ import java.util.Scanner;
 
 public class Main {
 
-    static Scanner scanner = new Scanner(System.in);
-    static TictactoeValidator tictactoeValidator = new TictactoeValidator();
+    private static Scanner scanner = new Scanner(System.in);
+    private static TictactoeValidator tictactoeValidator = new TictactoeValidator();
+    private static char[][] board;
 
     public static void main(String[] args) {
-
         System.out.println("Submit data in format: \"_________\"");
         String input = scanner.nextLine();
-
-        char[][] board = prepareBoard(input);
+        board = prepareBoard(input);
         String state = tictactoeValidator.validate(board);
-        printState(board, state);
+        printState(state);
+        int[] userInput = getUserInput();
+        userInput = convertCoordinates(userInput);
+        updateBoard(userInput);
+        printState(state);
     }
 
     private static char[][] prepareBoard(String input) {
-
         char[][] board = new char[3][3];
 
         String inputData = input.substring(1, input.length() - 1);
@@ -34,8 +36,7 @@ public class Main {
         return board;
     }
 
-    private static void printState(char[][] board, String state) {
-
+    private static void printState(String state) {
         System.out.println("---------");
         for (char[] boardRow : board) {
             System.out.print("| ");
@@ -47,14 +48,62 @@ public class Main {
         System.out.println("---------");
         System.out.println(state);
     }
+
+    private static int[] getUserInput() {
+        System.out.println("Enter the coordinates:");
+        String input = scanner.nextLine();
+        int x = Character.getNumericValue(input.charAt(0));
+        int y = Character.getNumericValue(input.charAt(2));
+        int[] result = {x, y};
+        return result;
+    }
+
+    private static int[] convertCoordinates(int[] coordinates) {
+        int[] newCoordinates = new int[2];
+        newCoordinates[0] = convertY(coordinates[1]);
+        newCoordinates[1] = convertX(coordinates[0]);
+        return newCoordinates;
+    }
+
+    private static void updateBoard(int[] coordinates){
+        board[coordinates[0]][coordinates[1]] = 'X';
+    }
+
+    private static int convertX(int x) {
+        int j = 0;
+        switch (x) {
+            case 1:
+                j = 0;
+                break;
+            case 2:
+                j = 1;
+                break;
+            case 3:
+                j = 2;
+                break;
+        }
+        return j;
+    }
+
+    private static int convertY(int y) {
+        int i = 0;
+        switch (y) {
+            case 1:
+                i = 2;
+                break;
+            case 2:
+                i = 1;
+                break;
+            case 3:
+                i = 0;
+                break;
+        }
+        return i;
+    }
 }
 
 class TictactoeValidator {
-
-    public TictactoeValidator() {
-    }
-
-    public String validate(char[][] board) {
+    String validate(char[][] board) {
 
         boolean emptyFields = hasEmptyFields(board);
         boolean isXinRow = isSignInRow(board, 'X');
@@ -71,9 +120,7 @@ class TictactoeValidator {
             return "X wins";
         } else if (isOinRow) {
             return "O wins";
-        } else {
         }
-
         return " ";
     }
 
@@ -96,7 +143,7 @@ class TictactoeValidator {
             }
         }
 
-        for (int j = 0; j < 3; j++){
+        for (int j = 0; j < 3; j++) {
             if (board[0][j] == sign && board[0][j] == board[1][j] && board[1][j] == board[2][j]) {
                 return true;
             }
