@@ -1,5 +1,7 @@
 package tictactoe;
 
+import java.util.Arrays;
+import java.util.Random;
 import java.util.Scanner;
 
 public class Main {
@@ -7,19 +9,49 @@ public class Main {
     private static Scanner scanner = new Scanner(System.in);
     private static TictactoeValidator tictactoeValidator = new TictactoeValidator();
     private static char[][] board;
+    private static Random random = new Random(1);
 
     public static void main(String[] args) {
-        System.out.println("Submit data in format: \"_________\"");
-        String input = scanner.nextLine();
-        board = prepareBoard(input);
-        String state = tictactoeValidator.validate(board);
+
+        boolean isFinished = false;
+        String state;
+        board = prepareEmptyBoard();
+        state = tictactoeValidator.validate(board);
         printState(state);
-        int[] userInput = getUserInput();
-        userInput = convertCoordinates(userInput);
-        updateBoard(userInput);
-        printState(state);
+        do {
+            makeUserMove();
+            state = tictactoeValidator.validate(board);
+            printState(state);
+            if(state == "X wins" || state == "O wins" || state == "Draw"){
+                isFinished = true;
+                break;
+            }
+            makeComputerMove();
+            state = tictactoeValidator.validate(board);
+            printState(state);
+            if(state == "X wins" || state == "O wins" || state == "Draw"){
+                isFinished = true;
+                break;
+            }
+        } while (!isFinished);
     }
 
+    private static void makeUserMove() {
+        int[] userInput = getUserCoordinates();
+        updateBoard(userInput);
+    }
+
+    private static String getIntialDashboard() {
+        System.out.println("Submit data in format: \"_________\"");
+        return scanner.nextLine();
+    }
+    private static char[][] prepareEmptyBoard(){
+        char[][] board = new char[3][3];
+        for (char[] boardRow : board){
+            Arrays.fill(boardRow, ' ');
+        }
+        return board;
+    }
     private static char[][] prepareBoard(String input) {
         char[][] board = new char[3][3];
 
@@ -49,13 +81,44 @@ public class Main {
         System.out.println(state);
     }
 
-    private static int[] getUserInput() {
-        System.out.println("Enter the coordinates:");
-        String input = scanner.nextLine();
-        int x = Character.getNumericValue(input.charAt(0));
-        int y = Character.getNumericValue(input.charAt(2));
-        int[] result = {x, y};
+    private static int[] getUserCoordinates() {
+
+        boolean isReady = false;
+        String input;
+        int x = 0;
+        int y = 0;
+        do {
+            System.out.println("Enter the coordinates:");
+            input = scanner.nextLine();
+            if (isInputValid(input)) {
+                x = Character.getNumericValue(input.charAt(0));
+                y = Character.getNumericValue(input.charAt(2));
+                int[] coordinatesToCheck = {x, y};
+                if (isBoardCellEmpty(coordinatesToCheck)) {
+                    isReady = true;
+                }
+            }
+        } while (!isReady);
+
+        int[] coordinatesToConvert = {x, y};
+        int[] result = convertCoordinates(coordinatesToConvert);
         return result;
+    }
+
+    private static void makeComputerMove() {
+        System.out.println("Making move level \"easy\"");
+        boolean isMoved = false;
+        int i;
+        int j;
+        do {
+            i = random.nextInt( 3);
+            j = random.nextInt(3);
+
+            if (board[i][j] == ' ') {
+                board[i][j] = 'O';
+                isMoved = true;
+            }
+        } while (!isMoved);
     }
 
     private static int[] convertCoordinates(int[] coordinates) {
@@ -65,7 +128,7 @@ public class Main {
         return newCoordinates;
     }
 
-    private static void updateBoard(int[] coordinates){
+    private static void updateBoard(int[] coordinates) {
         board[coordinates[0]][coordinates[1]] = 'X';
     }
 
@@ -99,6 +162,57 @@ public class Main {
                 break;
         }
         return i;
+    }
+
+    private static boolean isInputValid(String input) {
+
+        String x = String.valueOf(input.charAt(0));
+        String y = String.valueOf(input.charAt(2));
+
+        if (!isNumeric(x)) {
+            System.out.println("You should enter numbers!");
+            return false;
+        }
+        if (!isNumeric(y)) {
+            System.out.println("You should enter numbers!");
+            return false;
+        }
+
+        int xNumber = Integer.valueOf(x);
+        int yNumber = Integer.valueOf(y);
+
+        if (xNumber < 1 || xNumber > 3) {
+            System.out.println("Coordinates should be from 1 to 3!");
+            return false;
+        }
+
+        if (yNumber < 1 || yNumber > 3) {
+            System.out.println("Coordinates should be from 1 to 3!");
+            return false;
+        }
+        return true;
+    }
+
+    private static boolean isBoardCellEmpty(int[] coordinatesToCheck) {
+
+        int newX = convertY(coordinatesToCheck[1]);
+        int newY = convertX(coordinatesToCheck[0]);
+
+        if (board[newX][newY] == ' ') {
+            return true;
+        } else {
+            System.out.println("This cell is occupied! Choose another one!");
+            return false;
+        }
+    }
+
+    private static boolean isNumeric(String input) {
+        try {
+            Integer.parseInt(input);
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
+        }
     }
 }
 
@@ -169,8 +283,6 @@ class TictactoeValidator {
                     xCount++;
                 } else if (boardElement == 'O') {
                     oCount++;
-                } else {
-
                 }
             }
         }
