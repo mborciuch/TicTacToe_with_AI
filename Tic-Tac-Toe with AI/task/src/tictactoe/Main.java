@@ -5,7 +5,12 @@ import java.util.Random;
 import java.util.Scanner;
 
 enum DifficultyLevel {
-    easy, medium, hard
+    EASY, MEDIUM, hard
+}
+
+interface Difficulty {
+
+    void makeComputerMove(Player player);
 }
 
 public class Main {
@@ -26,15 +31,17 @@ public class Main {
             if (arguments.length == 3) {
                 if (arguments[0].equals("start")) {
                     switch (arguments[1]) {
-                        case "user":
-                        case "easy":
-                            break;
                         default:
                             System.out.println("Bad parameters!");
+                        case "user":
+                        case "easy":
+                        case "medium":
+                            break;
                     }
                     switch (arguments[2]) {
                         case "user":
                         case "easy":
+                        case "medium":
                             break;
                         default:
                             System.out.println("Bad parameters!");
@@ -104,7 +111,10 @@ class Game {
                 playerOne = new HumanPlayer('X', board, userInputLoader);
                 break;
             case "easy":
-                playerOne = new AIPlayer('X', board, DifficultyLevel.easy, new Random(10000));
+                playerOne = new ComputerPlayer('X', board, new EasyDifficulty(board, new Random(957135)));
+                break;
+            case "medium":
+                playerOne = new ComputerPlayer('X', board, new MediumDifficulty(new Random(1564899), board));
                 break;
         }
         switch (playerTwoType) {
@@ -112,7 +122,10 @@ class Game {
                 playerTwo = new HumanPlayer('O', board, userInputLoader);
                 break;
             case "easy":
-                playerTwo = new AIPlayer('O', board, DifficultyLevel.easy, new Random(100000));
+                playerTwo = new ComputerPlayer('O', board, new EasyDifficulty(board, new Random(427878)));
+                break;
+            case "medium":
+                playerTwo = new ComputerPlayer('O', board, new MediumDifficulty(new Random(7786778), board));
                 break;
         }
     }
@@ -188,7 +201,6 @@ class Game {
         return scanner.nextLine();
     }
 }
-
 
 class TicTacToeStateEvaluator {
 
@@ -270,6 +282,7 @@ class TicTacToeStateEvaluator {
 }
 
 abstract class Player {
+
     char[][] board;
     private char sign;
 
@@ -283,6 +296,8 @@ abstract class Player {
     }
 
     abstract void makeMove();
+
+    abstract void set(int x, int y, char sign);
 }
 
 class HumanPlayer extends Player {
@@ -297,34 +312,31 @@ class HumanPlayer extends Player {
     @Override
     void makeMove() {
         int[] coordinates = userInputLoader.getUserCoordinates();
-        board[coordinates[0]][coordinates[1]] = getSign();
+        set(coordinates[0], coordinates[1], getSign());
+    }
+
+    @Override
+    void set(int x, int y, char sign) {
+        board[x][y] = sign;
     }
 }
 
-class AIPlayer extends Player {
-    DifficultyLevel difficultyLevel;
-    private Random random;
+class ComputerPlayer extends Player {
 
-    public AIPlayer(char sign, char[][] board, DifficultyLevel difficultyLevel, Random random) {
+    Difficulty difficulty;
+
+    public ComputerPlayer(char sign, char[][] board, Difficulty difficulty) {
         super(sign, board);
-        this.difficultyLevel = difficultyLevel;
-        this.random = random;
+        this.difficulty = difficulty;
     }
 
     void makeMove() {
-        System.out.println("Making move level \"easy\"");
-        boolean isMoved = false;
-        int i;
-        int j;
-        do {
-            i = random.nextInt(3);
-            j = random.nextInt(3);
+        difficulty.makeComputerMove(this);
+    }
 
-            if (board[i][j] == ' ') {
-                board[i][j] = getSign();
-                isMoved = true;
-            }
-        } while (!isMoved);
+    @Override
+    void set(int x, int y, char sign) {
+        board[x][y] = sign;
     }
 }
 
@@ -454,5 +466,195 @@ class UserInputLoader {
         }
     }
 }
+
+class EasyDifficulty implements Difficulty {
+
+    char[][] board;
+    Random random;
+
+    public EasyDifficulty(char[][] board, Random random) {
+        this.board = board;
+        this.random = random;
+    }
+
+    @Override
+    public void makeComputerMove(Player player) {
+        System.out.println("Making move level \"easy\"");
+        boolean isMoved = false;
+        int i;
+        int j;
+        do {
+            j = random.nextInt(3);
+            i = random.nextInt(3);
+
+            if (board[i][j] == ' ') {
+                player.set(i, j, player.getSign());
+                isMoved = true;
+            }
+        } while (!isMoved);
+    }
+}
+
+class MediumDifficulty implements Difficulty {
+
+    Random random;
+    char[][] board;
+
+    public MediumDifficulty(Random random, char[][] board) {
+        this.random = random;
+        this.board = board;
+    }
+
+
+
+    @Override
+    public void makeComputerMove(Player player) {
+
+        RowAnalyzer rowAnalyzer;
+        char sign = player.getSign();
+        char oppositeSign = sign == 'X' ? 'O' : 'X';
+
+        for(int x = 0; x < 3; x++){
+            rowAnalyzer = RowAnalyzer.row(board, x);
+            if(requestLast(rowAnalyzer,player, sign, oppositeSign)){
+                return;
+            }
+
+        }
+        for (int y = 0; y < 3; y++){
+            rowAnalyzer = RowAnalyzer.col(board, y);
+            if(requestLast(rowAnalyzer,player, sign, oppositeSign)){
+                return;
+            }
+        }
+
+        rowAnalyzer = RowAnalyzer.diagonalLeftTop(board);
+        if (requestLast(rowAnalyzer, player, sign, oppositeSign)){
+            return;
+        }
+
+        rowAnalyzer = RowAnalyzer.diagonalRightTop(board);
+        if (requestLast(rowAnalyzer, player, sign, oppositeSign)){
+            return;
+        }
+
+        boolean isMoved = false;
+        int i;
+        int j;
+        do {
+            i = random.nextInt(3);
+            j = random.nextInt(3);
+
+            if (board[i][j] == ' ') {
+                player.set(i, j, player.getSign());
+                isMoved = true;
+            }
+        } while (!isMoved);
+        return;
+    }
+
+
+
+    private boolean requestLast(RowAnalyzer rowAnalyzer, Player player, char sign, char oppositeSign) {
+        int[] coordinates = rowAnalyzer.getOneLeftOrNull(sign);
+        if (coordinates != null) {
+            player.set(coordinates[0], coordinates[1], sign);
+            return true;
+        }
+        coordinates = rowAnalyzer.getOneLeftOrNull(oppositeSign);
+        if (coordinates != null) {
+            player.set(coordinates[0], coordinates[1], sign);
+            return true;
+        }
+        return false;
+    }
+}
+
+class RowAnalyzer {
+
+    static final String TYPE_COL = "col";
+    static final String TYPE_ROW = "row";
+    static final String TYPE_DIAG_TOP_LEFT = "diagtopleft";
+    static final String TYPE_DIAG_TOP_RIGHT = "diagtopright";
+    char[] row;
+    String type;
+    int matrixRowPointer;
+
+    RowAnalyzer(char[] row, String type, int matrixRowPointer) {
+        this.row = row;
+        this.type = type;
+        this.matrixRowPointer = matrixRowPointer;
+    }
+
+    public RowAnalyzer(char[] row, String type) {
+        this.row = row;
+        this.type = type;
+    }
+
+    static public RowAnalyzer col(char[][] board, int x) {
+
+        char[] row = new char[board.length];
+        for (int y = 0; y < board.length; y++) {
+            row[y] = board[x][y];
+        }
+        return new RowAnalyzer(row, TYPE_COL, x);
+    }
+
+    static public RowAnalyzer row(char[][] board, int y) {
+        return new RowAnalyzer(board[y], TYPE_ROW, y);
+    }
+
+    static public RowAnalyzer diagonalLeftTop(char[][] board) {
+        char[] row = new char[board.length];
+        for (int x = 0; x < board.length; x++) {
+            row[x] = board[x][x];
+        }
+        return new RowAnalyzer(row, TYPE_DIAG_TOP_LEFT);
+    }
+
+    static public RowAnalyzer diagonalRightTop(char[][] board) {
+        char[] row = new char[board.length];
+        for (int x = board.length - 1; x >= 0; x--) {
+            row[x] = board[x][board.length - x - 1];
+        }
+        return new RowAnalyzer(row, TYPE_DIAG_TOP_RIGHT);
+    }
+
+    public int[] getOneLeftOrNull(char symbol) {
+        int symbolCounter = 0;
+        int emptyCounter = 0;
+        int[] position = new int[2];
+        for (int i = 0; i < row.length; i++) {
+            if (row[i] == symbol) {
+                symbolCounter++;
+            } else if (row[i] == ' ') {
+                emptyCounter++;
+                switch (type) {
+                    case TYPE_COL:
+                        position[0] = i;
+                        position[1] = matrixRowPointer;
+                        break;
+                    case TYPE_ROW:
+                        position[0] = matrixRowPointer;
+                        position[1] = i;
+                        break;
+                    case TYPE_DIAG_TOP_LEFT:
+                        position[0] = i;
+                        position[1] = position[0];
+                        break;
+                    case TYPE_DIAG_TOP_RIGHT:
+                        position[0] = i;
+                        position[1] = row.length - i - 1;
+                }
+            }
+        }
+        if ((row.length - symbolCounter) == 1 && emptyCounter == 1) {
+            return position;
+        }
+        return null;
+    }
+}
+
+
 
 
